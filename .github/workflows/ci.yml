@@ -2,7 +2,7 @@ name: Build Docker image (no publish)
 
 on:
   push:
-    branches: ["**"]     # build for all branches
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  DOCKER_CONTEXT: .
+  BUILD_CONTEXT: .            # <-- renamed (used for docker build context)
   DOCKERFILE_PATH: ./Dockerfile
   IMAGE_TAG: bull-cow:ci-${{ github.sha }}
 
@@ -27,15 +27,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ===== Install app dependencies (Python) =====
+      # Safety: ensure Docker CLI uses the default docker context
+      - name: Clear conflicting DOCKER_CONTEXT (if any)
+        run: echo "DOCKER_CONTEXT=" >> "$GITHUB_ENV"
+
+      # Install Python dependencies
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
-          cache-dependency-path: |
-            requirements.txt
-            **/requirements.txt
 
       - name: Install dependencies
         run: |
@@ -46,18 +47,19 @@ jobs:
             echo "No requirements.txt found at repo root. Skipping."
           fi
 
+      # Set up Docker Buildx (single-arch; no QEMU required)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build without pushing; keep it fast and cache-enabled
-      - name: Build image (no push)
+      # Build image (no push)
+      - name: Build image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.DOCKER_CONTEXT }}
+          context: ${{ env.BUILD_CONTEXT }}   # <-- use BUILD_CONTEXT
           file: ${{ env.DOCKERFILE_PATH }}
           push: false
-          load: false                 # set true if you need 'docker images' on runner
-          platforms: linux/amd64      # change/add linux/arm64 if needed
+          load: false
+          platforms: linux/amd64
           tags: ${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -65,12 +67,8 @@ jobs:
       - name: Summary
         run: |
           {
-            echo "## Docker build completed"
+            echo "## Build successful!"
             echo ""
-            echo "**Tag (local CI only):** \`${{ env.IMAGE_TAG }}\`"
-            echo ""
+            echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
-
-
-
