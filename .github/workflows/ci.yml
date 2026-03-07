@@ -46,10 +46,6 @@ jobs:
             echo "No requirements.txt found at repo root. Skipping."
           fi
 
-      # ===== Build Docker image (no push) =====
-      - name: Set up QEMU (optional, for multi-arch emulation)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -75,5 +71,6 @@ jobs:
             echo ""
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
+
 
 
