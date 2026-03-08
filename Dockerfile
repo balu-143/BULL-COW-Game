@@ -15,4 +15,4 @@ COPY . .
 
 # Default command to run the game
 # Replace src/game.py with your actual entry point
-CMD ["python", "src/game.py"]
+CMD ["python", "src/Bull&Cow Web App.py"]
