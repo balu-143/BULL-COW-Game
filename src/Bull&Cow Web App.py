@@ -1,6 +1,7 @@
 from flask import Flask, request, session
 import random
 import collections
+import os
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
@@ -79,4 +80,8 @@ def play_game():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    #app.run(debug=True)
+    
+    port = int(os.getenv("PORT", "5000"))
+    # IMPORTANT: bind to 0.0.0.0 so it's reachable from outside the container
+    app.run(host="0.0.0.0", port=port, debug=False)
