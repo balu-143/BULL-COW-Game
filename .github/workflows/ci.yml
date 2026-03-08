@@ -1,0 +1,90 @@
+name: Build Docker image (no publish)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  BUILD_CONTEXT: .            # <-- renamed (used for docker build context)
+  DOCKERFILE_PATH: ./Dockerfile
+  IMAGE_TAG: bull-cow:ci-${{ github.sha }}
+
+jobs:
+  build:
+    name: Install deps & build Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Safety: ensure Docker CLI uses the default docker context
+      - name: Clear conflicting DOCKER_CONTEXT (if any)
+        run: echo "DOCKER_CONTEXT=" >> "$GITHUB_ENV"
+
+      # Install Python dependencies
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements.txt found at repo root. Skipping."
+          fi
+
+      # Set up Docker Buildx (single-arch; no QEMU required)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build image (no push)
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.BUILD_CONTEXT }}   # <-- use BUILD_CONTEXT
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      
+      - name: Run Docker container
+        run: |
+          echo "Running container..."
+          docker run -d --name bullcow -p 5000:5000 ${{ env.IMAGE_TAG }}
+
+      - name: Hit the application endpoint
+        run: |
+          echo "Testing container..."
+          sleep 5
+          curl -v http://localhost:5000/
+    
+
+      - name: Summary
+        run: |
+          {
+            echo "## Build successful!"
+            echo ""
+            echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
+            echo "No registry push was performed."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+
