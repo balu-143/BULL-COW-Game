@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the project
 COPY . .
+EXPOSE 5000
 
 # Default command to run the game
 # Replace src/game.py with your actual entry point
