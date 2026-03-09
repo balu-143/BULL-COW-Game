@@ -87,6 +87,10 @@ jobs:
           done
           echo "Service is up!"
 
+       permissions:
+        contents: read
+        packages: write
+
     
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
@@ -131,6 +135,7 @@ jobs:
             echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
+
 
 
 
