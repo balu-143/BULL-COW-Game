@@ -117,7 +117,11 @@ jobs:
             docker push "$GHCR_LATEST_TAG"
           fi
 
-    
+      - name: Debug owner
+        run: |
+         echo "repository: ${{ github.repository }}"
+         echo "repository_owner: ${{ github.repository_owner }}"
+         echo "ref: ${{ github.ref }}"
 
       - name: Summary
         run: |
@@ -127,6 +131,7 @@ jobs:
             echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
+
 
 
 
