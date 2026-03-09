@@ -88,6 +88,36 @@ jobs:
           echo "Service is up!"
 
     
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag image for GHCR
+        if: github.event_name == 'push'
+        run: |
+          GHCR_IMAGE="ghcr.io/${{ github.repository_owner }}/bull-cow"
+          docker tag "${{ env.IMAGE_TAG }}" "$GHCR_IMAGE:ci-${{ github.sha }}"
+          echo "GHCR_CI_TAG=$GHCR_IMAGE:ci-${{ github.sha }}" >> "$GITHUB_ENV"
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag "${{ env.IMAGE_TAG }}" "$GHCR_IMAGE:latest"
+            echo "GHCR_LATEST_TAG=$GHCR_IMAGE:latest" >> "$GITHUB_ENV"
+          fi
+
+      - name: Push image to GHCR
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          docker push "$GHCR_CI_TAG"
+          if [ -n "${GHCR_LATEST_TAG:-}" ]; then
+            docker push "$GHCR_LATEST_TAG"
+          fi
+
+    
 
       - name: Summary
         run: |
@@ -97,6 +127,7 @@ jobs:
             echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
+
 
 
 
