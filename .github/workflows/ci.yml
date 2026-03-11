@@ -101,7 +101,7 @@ jobs:
       - name: Tag image for GHCR
         if: github.event_name == 'push'
         run: |
-          GHCR_IMAGE="ghcr.io/balui-143/bull-cow"
+          GHCR_IMAGE="ghcr.io/balu-143/bull-cow"
           docker tag "${{ env.IMAGE_TAG }}" "$GHCR_IMAGE:ci-${{ github.sha }}"
           echo "GHCR_CI_TAG=$GHCR_IMAGE:ci-${{ github.sha }}" >> "$GITHUB_ENV"
 
@@ -133,6 +133,7 @@ jobs:
             echo "**Image tag (local to runner):** \`${{ env.IMAGE_TAG }}\`"
             echo "No registry push was performed."
           } >> "$GITHUB_STEP_SUMMARY"
+
 
 
 
