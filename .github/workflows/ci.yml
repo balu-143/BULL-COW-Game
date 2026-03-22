@@ -100,25 +100,23 @@ jobs:
           OWNER="$(echo "$RAW_OWNER" | tr '[:upper:]' '[:lower:]')"
           REPO="$(echo "$RAW_REPO" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')"
 
-          GHCR_IMAGE="ghcr.io/${OWNER}/${REPO}"
-          echo "GHCR_IMAGE resolved to: $GHCR_IMAGE"
-
           
-          docker tag "${{ env.IMAGE_TAG }}" "$GHCR_IMAGE:ci-${{ github.sha }}"
-          echo "GHCR_CI_TAG=$GHCR_IMAGE:ci-${{ github.sha }}" >> "$GITHUB_ENV"
+          # CI tag (per commit SHA)
+          docker tag "${{ env.IMAGE_TAG }}" "$IMAGE:ci-${{ github.sha }}"
+          echo "GHCR_CI_TAG=$IMAGE:ci-${{ github.sha }}" >> "$GITHUB_ENV"
+
+          # Latest tag only for main
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag "${{ env.IMAGE_TAG }}" "$GHCR_IMAGE:latest"
-            echo "GHCR_LATEST_TAG=$GHCR_IMAGE:latest" >> "$GITHUB_ENV"
-          fi
+          docker tag "${{ env.IMAGE_TAG }}" "$IMAGE:latest"
+          echo "GHCR_LATEST_TAG=$IMAGE:latest" >> "$GITHUB_ENV"
+       fi
+
 
       - name: Push image to GHCR
-        if: github.event_name == 'push'
-        run: |
-          set -e
-          docker push "$GHCR_CI_TAG"
-          if [ -n "${GHCR_LATEST_TAG:-}" ]; then
-            docker push "$GHCR_LATEST_TAG"
-          fi
+         docker push "$GHCR_CI_TAG"
+         if [ -n "${GHCR_LATEST_TAG:-}" ]; then
+         docker push "$GHCR_LATEST_TAG"
+       fi
 
       - name: Debug owner
         run: |
